@@ -6,6 +6,7 @@
                 Diffuse,Specular,Reflaction,Refraction,Emission
             2.add Emission Shade
             3.add easy sun light
+	    4.add drand48 lib
 */
 
 #include <iostream>
