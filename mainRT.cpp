@@ -27,9 +27,7 @@ enum channal {ALL,DIF,SPC,RFL,RFR,EMT};
 
 #ifndef DRAND48_H
 #define DRAND48_H
-/*
-https://www.cnblogs.com/yoyo-sincerely/p/8854922.html
-*/
+
 #define drand48m 0x100000000LL  
 #define drand48c 0xB16  
 #define drand48a 0x5DEECE66DLL  
