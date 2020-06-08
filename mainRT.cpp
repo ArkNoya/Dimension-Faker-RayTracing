@@ -6,7 +6,7 @@
                 Diffuse,Specular,Reflaction,Refraction,Emission
             2.add Emission Shade
             3.add easy sun light
-	    4.add drand48 lib
+            4.add drand48 lib
 */
 
 #include <iostream>
@@ -27,7 +27,9 @@ enum channal {ALL,DIF,SPC,RFL,RFR,EMT};
 
 #ifndef DRAND48_H
 #define DRAND48_H
-
+/*
+https://www.cnblogs.com/yoyo-sincerely/p/8854922.html
+*/
 #define drand48m 0x100000000LL  
 #define drand48c 0xB16  
 #define drand48a 0x5DEECE66DLL  
@@ -605,11 +607,34 @@ int main(){
     h*=scale;
     cout<<"w:"<<w<<" h:"<<h<<endl;
 
+    //create directory
+    system("md .\\outImage");
+
     // .bmp file create
-    ofstream ofs("outImage.bmp", ios::binary);
+    ofstream ofs(".\\outImage\\beauty.bmp", ios::binary);
+    ofstream ofsd(".\\outImage\\Diffuse.bmp", ios::binary);
+    ofstream ofss(".\\outImage\\Specular.bmp", ios::binary);
+    ofstream ofsl(".\\outImage\\Reflaction.bmp", ios::binary);
+    ofstream ofsr(".\\outImage\\Refraction.bmp", ios::binary);
+    ofstream ofse(".\\outImage\\Emission.bmp", ios::binary);
     BMHead bmh(w,h);
     for(int i=0; i<bmh.size(); i++){
         ofs<<bmh[i];
+    }
+    for(int i=0; i<bmh.size(); i++){
+        ofsd<<bmh[i];
+    }
+    for(int i=0; i<bmh.size(); i++){
+        ofss<<bmh[i];
+    }
+    for(int i=0; i<bmh.size(); i++){
+        ofsl<<bmh[i];
+    }
+    for(int i=0; i<bmh.size(); i++){
+        ofsr<<bmh[i];
+    }
+    for(int i=0; i<bmh.size(); i++){
+        ofse<<bmh[i];
     }
 
     //obj build scenes
@@ -627,9 +652,11 @@ int main(){
     obj * scenes = new obj_list(list,9);
 
     //render options
-    int sampleTimes = 256;
+    int sampleTimes = 6;
     int rayDepth = 6;
     channal renderChannal = ALL;
+    //user interface
+    cout<<"Enter sampleTime:";cin>>sampleTimes;cout<<"Enter rayDepth:";cin>>rayDepth;cout<<endl<<"0.ALL\n1.Diffuse\n2.Specular\n3.Reflaction\n4.Refracion\n5.Emission"<<endl<<"Enter render chanal:";int getrc;cin>>getrc;switch(getrc){case 0:renderChannal=ALL;break;case 1:renderChannal=DIF;break;case 2:renderChannal=SPC;break;case 3:renderChannal=RFL;break;case 4:renderChannal=RFR;break;case 5:renderChannal=EMT;break;};
 
     //color list
     vector<vec> colorsDIF(w*h);
@@ -638,6 +665,7 @@ int main(){
     vector<vec> colorsRFR(w*h);
     vector<vec> colorsEMT(w*h);
 
+    //render
     int t0 = time(NULL);
     cout<<"rendering..."<<endl;
     for(int j=0; j<5; j++){
@@ -684,22 +712,98 @@ int main(){
             }
         }
     }
+    int t1 = time(NULL);
+    cout<<"rendering completed ! "<<"time used : "<<t1-t0<<" seconds"<<endl;
+
+    //writing files
+    t0 = time(NULL);
+    cout<<"wirting file..."<<endl;
+    //mix all color
     vector<vec> colors(w*h);
 #pragma omp parallel for
     for(int i=0; i<w*h; i++){
         colors[i] = max(max(max(max(colorsDIF[i],colorsSPC[i]),colorsRFL[i]),colorsRFR[i]),colorsEMT[i]);
     }
-    int t1 = time(NULL);
-    cout<<"rendering completed ! "<<"time used : "<<t1-t0<<" seconds"<<endl;
+    //writing
+#pragma omp parallel for
+    for (int i = 0; i < 6; i++)
+    {
+        switch (i)
+        {
+        case 0:
+            for(int i=0; i<w*h; i++){
+                BMofs(ofs,atangamma(colors[i]));
+            }
+            break;
+        case 1:
+            for(int i=0; i<w*h; i++){
+                if(renderChannal!=ALL && renderChannal!=DIF) break;
+                BMofs(ofsd,atangamma(colorsDIF[i]));
+            }
+            break;
+        case 2:
+            for(int i=0; i<w*h; i++){
+                if(renderChannal!=ALL && renderChannal!=SPC) break;
+                BMofs(ofss,atangamma(colorsSPC[i]));
+            }
+            break;
+        case 3:
+            for(int i=0; i<w*h; i++){
+                if(renderChannal!=ALL && renderChannal!=RFL) break;
+                BMofs(ofsl,atangamma(colorsRFL[i]));
+            }
+            break;
+        case 4:
+            for(int i=0; i<w*h; i++){
+                if(renderChannal!=ALL && renderChannal!=RFR) break;
+                BMofs(ofsr,atangamma(colorsRFR[i]));
+            }
+            break;
+        case 5:
+            for(int i=0; i<w*h; i++){
+                if(renderChannal!=ALL && renderChannal!=EMT) break;
+                BMofs(ofse,atangamma(colorsEMT[i]));
+            }
+            break;
 
-    cout<<"wirting file..."<<endl;
-    for(int i=0; i<w*h; i++){
-        BMofs(ofs,atangamma(colors[i]));
+        default:
+            break;
+        }
     }
+    t1 = time(NULL);
+    cout<<"writing file completed ! "<<"time used : "<<t1-t0<<" seconds"<<endl;
     cout<<"write file completed !"<<endl;
 
     ofs.close();
-    system("outImage.bmp");
+    ofsd.close();
+    ofss.close();
+    ofsl.close();
+    ofsr.close();
+    ofse.close();
+    switch (renderChannal)
+    {
+    case ALL:
+        system(".\\outImage\\beauty.bmp");
+        break;
+    case DIF:
+        system(".\\outImage\\Diffuse.bmp");
+        break;
+    case SPC:
+        system(".\\outImage\\Specular.bmp");
+        break;
+    case RFL:
+        system(".\\outImage\\Reflaction.bmp");
+        break;
+    case RFR:
+        system(".\\outImage\\Refraction.bmp");
+        break;
+    case EMT:
+        system(".\\outImage\\Emission.bmp");
+        break;
+    
+    default:
+        break;
+    }
 
     return 233;
 }
